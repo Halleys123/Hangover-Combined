@@ -1,0 +1,92 @@
+# Hangover Server
+
+The backend API for **Hardware Prototyping Copilot**, built with Express, TypeScript, and MongoDB/Mongoose. It manages project canvas states, user authentication, hardware component catalogs, and datasheet uploads.
+
+---
+
+## Getting Started
+
+### Prerequisites
+- **Node.js** (v22 or higher recommended)
+- **MongoDB** (Running locally or a Mongo Atlas connection string)
+
+### Installation
+1. Install server dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Copy the environment variables template and configure it:
+   ```bash
+   cp example.env .env
+   ```
+   Modify the `.env` file to match your environment settings:
+   - `MONGODB_URI`: Your MongoDB database connection string.
+   - `JWT_SECRET`: Secret key used for signing JSON Web Tokens.
+   - `PORT`: Server port (defaults to `3000`).
+   - `CLIENT_ORIGIN`: Allowed CORS origin (defaults to client dev URL `http://localhost:5173`).
+
+### Hosted LLM Providers
+The server uses the OpenAI SDK against OpenAI-compatible chat-completion APIs. To use hosted inference instead of local Ollama, set one of these in `Hangover-server/.env`:
+
+```bash
+# OpenRouter free router
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-your_openrouter_key
+OPENROUTER_MODEL=openrouter/free
+
+# NVIDIA NIM / NVIDIA API Catalog
+AI_PROVIDER=nvidia
+NVIDIA_API_KEY=nvapi-your_nvidia_key
+NVIDIA_MODEL=meta/llama-3.3-70b-instruct
+```
+
+For a specific OpenRouter free model, replace `OPENROUTER_MODEL` with that model slug. For NVIDIA, use the model slug shown on the model's NVIDIA Build page.
+
+### Seeding the Database
+Pre-populate the database with the core catalog (microcontrollers, sensors) and sample projects:
+```bash
+npm run seed
+```
+
+### Running the Server
+
+#### Development Mode
+Runs the application with hot-reloading using `tsx watch`:
+```bash
+npm run dev
+```
+
+#### Production Mode
+Compile the TypeScript code and run the compiled JavaScript from the `dist/` directory:
+```bash
+npm run build
+npm start
+```
+
+---
+
+## API Endpoints Reference
+
+All endpoints are prefixed with `/api`.
+
+### 1. Authentication (`/api/auth`)
+*   `POST /register` - Register a new user account.
+*   `POST /login` - Log in to an account and receive a JWT.
+
+### 2. Projects (`/api/projects`)
+*   `GET /` - Fetch all projects for the authenticated user.
+*   `GET /:id` - Fetch details for a specific project.
+*   `POST /` - Create a new project.
+*   `PUT /:id` - Update project details (name, description, status).
+*   `PUT /:id/canvas` - Save canvas nodes and edges (automatically parses and updates the `components` list based on active components).
+*   `DELETE /:id` - Permanently delete a project.
+
+### 3. Components (`/api/components`)
+*   `GET /` - Fetch user's personal components library.
+*   `GET /catalog` - Fetch the global pre-seeded components catalog.
+*   `POST /` - Add a component to the user's library.
+
+### 4. Datasheets (`/api/datasheets`)
+*   `GET /` - Fetch list of uploaded datasheets.
+*   `POST /` - Upload a new datasheet PDF (triggers vector indexing placeholder pipeline).
