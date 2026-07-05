@@ -3,8 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { fade, fly } from 'svelte/transition';
 	import { onMount } from 'svelte';
-	import TechStackSection from '$lib/components/TechStackSection.svelte';
-	import FeaturesSection from '$lib/components/FeaturesSection.svelte';
 
 	let activeStep = $state(0);
 	let isLoaded = $state(false);
@@ -203,8 +201,8 @@
 				</button>
 			</div>
 
-			<!-- LIVE INTERACTIVE SCHEMATIC PREVIEW -->
-			<div id="preview" class="relative max-w-5xl mx-auto rounded-3xl p-1 bg-gradient-to-b from-slate-700/50 via-indigo-500/20 to-slate-800/50 shadow-2xl shadow-black/80 scroll-mt-24">
+			<!-- LIVE INTERACTIVE SCHEMATIC PREVIEW / TECH STACK SHOWCASE -->
+			<div id="tech-stack" class="relative max-w-5xl mx-auto rounded-3xl p-1 bg-gradient-to-b from-slate-700/50 via-indigo-500/20 to-slate-800/50 shadow-2xl shadow-black/80 scroll-mt-24">
 				<div class="bg-[#0F1423] rounded-[22px] overflow-hidden border border-slate-800/80 backdrop-blur-xl">
 					<!-- Mock Window Header -->
 					<div class="px-6 py-4 bg-slate-900/90 border-b border-slate-800/80 flex items-center justify-between">
@@ -304,11 +302,8 @@
 			</div>
 		</div>
 
-		<!-- DEDICATED KEY FEATURES SECTION -->
-		<FeaturesSection />
-
 		<!-- STATISTICS BANNER -->
-		<div id="stats" class="border-y border-slate-800/80 bg-slate-900/50 backdrop-blur-md py-10 scroll-mt-24">
+		<div id="features" class="border-y border-slate-800/80 bg-slate-900/50 backdrop-blur-md py-10 scroll-mt-24">
 			<div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
 				<div>
 					<p class="text-3xl lg:text-4xl font-extrabold text-white font-mono">10,000+</p>
@@ -384,9 +379,6 @@
 			</div>
 		</div>
 
-		<!-- DEDICATED TECH STACK ANIMATION SECTION -->
-		<TechStackSection />
-
 		<!-- CALL TO ACTION BANNER -->
 		<div class="max-w-5xl mx-auto px-6 pb-24">
 			<div class="rounded-3xl bg-gradient-to-tr from-indigo-900/60 via-purple-900/40 to-slate-900/80 border border-indigo-500/30 p-8 md:p-14 text-center relative overflow-hidden shadow-2xl shadow-indigo-950/50">
@@ -422,7 +414,7 @@
 			<div class="flex items-center gap-8 text-slate-400 font-medium">
 				<a href="/projects" class="hover:text-white transition-colors">Projects</a>
 				<a href="/datasheets" class="hover:text-white transition-colors">Datasheet Library</a>
-				<a href="https://github.com/Halleys123/Hangover-Combined" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">GitHub</a>
+				<a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-white transition-colors">GitHub</a>
 			</div>
 			<p class="text-xs text-slate-600 font-mono">
 				© 2026 Hangover AI. Built for hardware innovators.

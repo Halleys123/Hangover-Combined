@@ -23,41 +23,21 @@ Welcome to the technical reference manual for the **Hangover / Cognee Advanced A
 
 The application is structured as a decoupled full-stack engineering workspace designed to process raw semiconductor/hardware datasheets (PDFs) into deterministic, interactive circuit diagrams on a live canvas.
 
-```mermaid
-graph TD
-    subgraph Frontend Client [SvelteKit / Svelte 5 Client : Port 5173]
-        UI[Workspace UI & Chat Sidebar]
-        Canvas[@xyflow/svelte React Flow Canvas]
-        NodeComp[HardwareNode.svelte Component]
-    end
+### 1️⃣ Architecture Layers Overview
 
-    subgraph Backend Server [Node.js / Express TypeScript Server : Port 3001]
-        API[Express Router / REST API]
-        Uploads[Multer PDF Storage]
-        CogneeService[services/cognee.ts]
-        OpenAIService[services/openaiService.ts]
-        PinDeriver[utils/derivePins.ts]
-    end
+| Layer | Technology Stack | Core Components | Primary Responsibilities |
+| :--- | :--- | :--- | :--- |
+| **Frontend Client**<br>*(Port 5173 / 5176)* | SvelteKit, Svelte 5, TypeScript, Tailwind CSS | Workspace UI, Chat Sidebar, `@xyflow/svelte` Canvas | Renders interactive hardware ICs (`HardwareNode.svelte`), handles drag-and-drop component state, and manages user chat prompts. |
+| **Backend Server**<br>*(Port 3001)* | Node.js, Express, TypeScript, Multer, Mongoose | REST API Router, PDF Ingestion, `cognee.ts`, `derivePins.ts` | Receives PDF uploads, chunks documents into sectional prompts, executes deterministic schema healing, and balances pin header layouts. |
+| **Cognitive Engine**<br>*(Cloud & Local)* | Cognee Cloud API, OpenAI SDK, Mongoose | Knowledge Graph, Vector Embeddings, LLM Inference Engine | Executes cognitive memory operations (`remember`, `cognify`, `recall`, `improve`) and relational constraint checks for safe auto-wiring. |
 
-    subgraph External / AI Intelligence Layer
-        Ollama[Local Ollama / OpenAI LLM Engine]
-        CogneeGraph[Cognee Graph Memory & Vector Store]
-    end
+### 2️⃣ End-to-End Data Flow Workflow
 
-    UI -->|HTTP POST Upload PDF| API
-    Canvas -->|Drag & Drop Component State| UI
-    UI -->|HTTP POST Chat / Generate Circuit| API
-    
-    API -->|Raw Buffer| Uploads
-    Uploads -->|Extract Text via pdf-parse| CogneeService
-    CogneeService -->|Chunked Map-Reduce Prompts| OpenAIService
-    CogneeService -->|Remember / Store Graph| CogneeGraph
-    
-    OpenAIService -->|LLM Inference| Ollama
-    CogneeService -->|Normalize & Heal Schema| PinDeriver
-    PinDeriver -->|Deterministic Left/Right Headers| API
-    API -->|JSON Response with Nodes & Edges| Canvas
-```
+1. **Datasheet Upload & Ingestion**: The engineer uploads a semiconductor PDF via the Frontend Client (`POST /api/datasheets`). The Backend Server stores the buffer using Multer and extracts raw text via `pdf-parse`.
+2. **Multi-Stage Sectional Synthesis**: For large documents (>25,000 characters), `services/cognee.ts` chunks text into targeted sections (DC limits vs. pinout tables) to prevent LLM attention degradation.
+3. **Deterministic Schema Healing & Pin Balancing**: Raw extractions pass through `normalizeExtractedSpecs()` to heal probabilistic LLM flaws (injecting complete 14-pin digital and 6-pin analog profiles for microcontrollers). `utils/derivePins.ts` balances left/right headers symmetrically.
+4. **Cognitive Graph Construction (Cognee Cloud)**: The Backend calls `cognee.remember()` and `POST /api/v1/cognify` to store raw specifications, embed semantic chunks, and construct relational knowledge graph entities.
+5. **Agentic Circuit Generation & Auto-Wiring**: When prompted to wire a circuit, the Backend calls `cognee.recall()` and `POST /api/v1/search`. Cognee's relational graph verifies electrical compatibility (e.g., catching excessive current draw) and emits deterministic JSON wire edges to animate connections on the canvas.
 
 ### Why Both MongoDB and Cognee? (Division of Storage vs. Cognitive Intelligence)
 
@@ -110,31 +90,20 @@ When a PDF is uploaded (`A000066.PDF` for Arduino Uno or `TEC1-12706.pdf` for Pe
 
 To resolve this, [cognee.ts](file:///e:/Projects/Complete/Hangover/server/src/services/cognee.ts) executes a **Multi-Stage Sectional Synthesis** (`extractSectionalSpecs`):
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server as Express Server
-    participant Cognee as cognee.ts
-    participant LLM as OpenAI / Ollama Engine
+#### Sectional Synthesis Execution Flow
 
-    Client->>Server: POST /api/datasheets/upload (PDF File)
-    Server->>Cognee: indexDatasheet(filePath)
-    Cognee->>Cognee: pdfParse() -> rawText (up to 60,000 chars)
-    
-    alt rawText.length > 25,000 chars (Multi-Section Chunking)
-        Cognee->>LLM: Pass Section 1 (Chars 0..30k) -> Extract Classification, DC Limits, Dimensions
-        Cognee->>LLM: Pass Section 2 (Chars 15k..65k) -> Extract ALL Pins (Power/Digital/Analog) & Sides
-        LLM-->>Cognee: Return JSON Part 1 & JSON Part 2
-        Cognee->>Cognee: Deep Merge Specs & Deduplicate Pin IDs
-    else Standard Document
-        Cognee->>LLM: Single Pass Extraction Prompt
-        LLM-->>Cognee: Return Parsed JSON Specs
-    end
-    
-    Cognee->>Cognee: normalizeExtractedSpecs() (Schema Healing)
-    Cognee-->>Server: Return Fully Normalized Engineering Schema
-    Server-->>Client: Render Interactive Component on Canvas
-```
+1. **Client Upload**: The Svelte 5 client sends a `POST /api/datasheets/upload` request with the PDF file attached.
+2. **Text Extraction**: The Express server calls `indexDatasheet(filePath)`, which uses `pdf-parse` to extract up to 60,000 characters of raw document text.
+3. **Adaptive Chunking Evaluation**:
+   * **If `rawText.length > 25,000` characters**:
+     * **Section 1 Pass (Chars 0..30k)**: Sent to the LLM to extract `Component Classification`, `DC Limits`, and `Dimensions`.
+     * **Section 2 Pass (Chars 15k..65k)**: Sent to the LLM to extract all individual pins (power, digital, analog) and side designations.
+     * **Deep Merge**: The server deep merges Specs Part 1 and Specs Part 2 and deduplicates pin IDs.
+   * **If Standard Document (<25,000 characters)**:
+     * Sent as a single-pass extraction prompt to the LLM.
+4. **Schema Healing**: The server runs `normalizeExtractedSpecs()` to heal missing microcontroller arrays or enforce 2-wire rules for power devices.
+5. **Graph Memory Commit**: The normalized specification is pushed to Cognee Cloud via `remember()` and `cognify()`.
+6. **Canvas Hydration**: The server returns the normalized schema to the client to render interactive components on the canvas.
 
 1. **Section 1 Pass (Overview & Electrical Characteristics)**: Analyzes the first 30,000 characters to extract `Component Classification`, `Electrical Limits` (`minOperatingVoltage`, `maxOperatingVoltage`, `nominalVoltage`, `maxCurrentmA`), and deterministic `Dimensions`.
 2. **Section 2 Pass (Pinout Tables & Interfaces)**: Analyzes characters 15,000 through 65,000 to enumerate every individual pin into `power`, `digital`, or `analog` arrays, capturing package side attributes (`"side": "left"` or `"side": "right"`).
