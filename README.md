@@ -10,7 +10,7 @@
 ![Cognee Cloud](https://img.shields.io/badge/Cognee_Cloud-Knowledge_Graph-8A2BE2?style=for-the-badge)
 ![React Flow](https://img.shields.io/badge/React_Flow-xyflow-FF0072?style=for-the-badge)
 
-**Built with ❤️ for [The Hangover Part AI Hackathon] • Powered by [Cognee Cloud]**
+**Built with ❤️ for The Hangover Part AI Hackathon • Powered by Cognee Cloud**
 
 [Overview](#-overview) • [Key Features](#-key-features) • [Why Cognee + MongoDB?](#-why-cognee--mongodb) • [System Architecture](#-system-architecture) • [Getting Started](#-getting-started) • [The Cognee AI Lifecycle](#-the-cognee-ai-lifecycle) • [API Reference](#-api-endpoints-reference)
 
@@ -45,43 +45,34 @@ When you prompt the AI to wire a circuit, Hangover does not rely on hallucinatio
 
 ## 🏗️ System Architecture
 
-Hangover is structured as a decoupled full-stack monorepo:
+Hangover is structured as a decoupled full-stack monorepo divided into three core architectural layers:
 
-```mermaid
-graph TD
-    subgraph Frontend_Client ["SvelteKit / Svelte 5 Client : Port 5173"]
-        UI["Workspace UI & Chat Sidebar"]
-        Canvas["@xyflow/svelte React Flow Canvas"]
-        NodeComp["HardwareNode.svelte Component"]
-    end
+### 1️⃣ Architecture Layers Overview
 
-    subgraph Backend_Server ["Node.js / Express TypeScript Server : Port 3001"]
-        API["Express Router / REST API"]
-        Uploads["Multer PDF Storage"]
-        CogneeService["services/cognee.ts"]
-        OpenAIService["services/openaiService.ts"]
-        PinDeriver["utils/derivePins.ts"]
-    end
+| Layer | Technology Stack | Core Components | Primary Responsibilities |
+| :--- | :--- | :--- | :--- |
+| **Frontend Client**<br>*(Port 5173 / 5176)* | SvelteKit, Svelte 5, TypeScript, Tailwind CSS | Workspace UI, Chat Sidebar, `@xyflow/svelte` Canvas | Renders interactive hardware ICs (`HardwareNode.svelte`), handles drag-and-drop component state, and manages user chat prompts. |
+| **Backend Server**<br>*(Port 3001)* | Node.js, Express, TypeScript, Multer, Mongoose | REST API Router, PDF Ingestion, `cognee.ts`, `derivePins.ts` | Receives PDF uploads, chunks documents into sectional prompts, executes deterministic schema healing, and balances pin header layouts. |
+| **Cognitive Engine**<br>*(Cloud & Local)* | Cognee Cloud API, OpenAI SDK, Mongoose | Knowledge Graph, Vector Embeddings, LLM Inference Engine | Executes cognitive memory operations (`remember`, `cognify`, `recall`, `improve`) and relational constraint checks for safe auto-wiring. |
 
-    subgraph External_AI ["External / AI Intelligence Layer"]
-        Ollama["Local Ollama / OpenAI LLM Engine"]
-        CogneeGraph["Cognee Graph Memory & Vector Store"]
-    end
+### 2️⃣ End-to-End Data Flow Workflow
 
-    UI -->|"HTTP POST Upload PDF"| API
-    Canvas -->|"Drag & Drop Component State"| UI
-    UI -->|"HTTP POST Chat / Generate Circuit"| API
-    
-    API -->|"Raw Buffer"| Uploads
-    Uploads -->|"Extract Text via pdf-parse"| CogneeService
-    CogneeService -->|"Chunked Map-Reduce Prompts"| OpenAIService
-    CogneeService -->|"Remember / Store Graph"| CogneeGraph
-    
-    OpenAIService -->|"LLM Inference"| Ollama
-    CogneeService -->|"Normalize & Heal Schema"| PinDeriver
-    PinDeriver -->|"Deterministic Left/Right Headers"| API
-    API -->|"JSON Response with Nodes & Edges"| Canvas
-```
+1. **Datasheet Upload & Ingestion**:
+   * The engineer uploads a semiconductor PDF via the Frontend Client (`POST /api/datasheets`).
+   * The Backend Server stores the file buffer using Multer and extracts raw text via `pdf-parse`.
+2. **Multi-Stage Sectional Synthesis**:
+   * For large documents (>25,000 characters), `services/cognee.ts` chunks text into targeted sections to prevent LLM attention degradation ("lost in the middle" phenomenon).
+   * **Section 1 Pass**: Analyzes the first 30,000 characters to extract DC operating limits and physical dimensions.
+   * **Section 2 Pass**: Analyzes characters 15,000 through 65,000 to enumerate exhaustive pinout tables and side orientations.
+3. **Deterministic Schema Healing & Pin Balancing**:
+   * Raw extractions pass through `normalizeExtractedSpecs()` to heal probabilistic LLM flaws (injecting complete 14-pin digital and 6-pin analog profiles for microcontrollers and enforcing 2-wire rules for power devices).
+   * `utils/derivePins.ts` balances left/right headers symmetrically so ICs render cleanly on the canvas without lopsided vertical ribbons.
+4. **Cognitive Graph Construction (Cognee Cloud)**:
+   * The Backend calls `cognee.remember()` and `POST /api/v1/cognify` to store raw specifications, embed semantic chunks, and construct relational knowledge graph entities in Cognee Cloud.
+5. **Agentic Circuit Generation & Auto-Wiring**:
+   * When the user prompts: *"Create a circuit connecting my Arduino Uno to the Peltier cooler"*, the Backend calls `cognee.recall()` and `POST /api/v1/search`.
+   * Cognee's relational graph verifies electrical compatibility (e.g., catching that a 57W Peltier drawing 6400mA exceeds an Arduino Uno's 20mA GPIO limit).
+   * The AI warns the user about electrical hazards (advising a MOSFET driver) and emits deterministic JSON wire edges to animate connections on the canvas.
 
 ---
 
