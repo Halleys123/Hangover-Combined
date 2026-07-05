@@ -49,38 +49,38 @@ Hangover is structured as a decoupled full-stack monorepo:
 
 ```mermaid
 graph TD
-    subgraph Frontend Client [SvelteKit / Svelte 5 Client : Port 5173]
-        UI[Workspace UI & Chat Sidebar]
-        Canvas[@xyflow/svelte React Flow Canvas]
-        NodeComp[HardwareNode.svelte Component]
+    subgraph Frontend_Client ["SvelteKit / Svelte 5 Client : Port 5173"]
+        UI["Workspace UI & Chat Sidebar"]
+        Canvas["@xyflow/svelte React Flow Canvas"]
+        NodeComp["HardwareNode.svelte Component"]
     end
 
-    subgraph Backend Server [Node.js / Express TypeScript Server : Port 3001]
-        API[Express Router / REST API]
-        Uploads[Multer PDF Storage]
-        CogneeService[services/cognee.ts]
-        OpenAIService[services/openaiService.ts]
-        PinDeriver[utils/derivePins.ts]
+    subgraph Backend_Server ["Node.js / Express TypeScript Server : Port 3001"]
+        API["Express Router / REST API"]
+        Uploads["Multer PDF Storage"]
+        CogneeService["services/cognee.ts"]
+        OpenAIService["services/openaiService.ts"]
+        PinDeriver["utils/derivePins.ts"]
     end
 
-    subgraph Cognitive Intelligence Layer [Cognee Cloud / LLM Engine]
-        CogneeCloud[Cognee Cloud API / Knowledge Graph]
-        LLM[OpenAI / OpenRouter / Local Ollama Engine]
+    subgraph External_AI ["External / AI Intelligence Layer"]
+        Ollama["Local Ollama / OpenAI LLM Engine"]
+        CogneeGraph["Cognee Graph Memory & Vector Store"]
     end
 
-    UI -->|1. Upload PDF Datasheet| API
-    Canvas -->|2. Drag & Drop Components| UI
-    UI -->|3. Prompt: Wire Circuit| API
+    UI -->|"HTTP POST Upload PDF"| API
+    Canvas -->|"Drag & Drop Component State"| UI
+    UI -->|"HTTP POST Chat / Generate Circuit"| API
     
-    API -->|Raw Buffer| Uploads
-    Uploads -->|Extract Text via pdf-parse| CogneeService
-    CogneeService -->|Chunked Map-Reduce Prompts| OpenAIService
-    CogneeService -->|remember / cognify| CogneeCloud
+    API -->|"Raw Buffer"| Uploads
+    Uploads -->|"Extract Text via pdf-parse"| CogneeService
+    CogneeService -->|"Chunked Map-Reduce Prompts"| OpenAIService
+    CogneeService -->|"Remember / Store Graph"| CogneeGraph
     
-    OpenAIService -->|LLM Inference| LLM
-    CogneeService -->|recall / Schema Healing| PinDeriver
-    PinDeriver -->|Balanced Pin Headers| API
-    API -->|JSON Nodes & Edges| Canvas
+    OpenAIService -->|"LLM Inference"| Ollama
+    CogneeService -->|"Normalize & Heal Schema"| PinDeriver
+    PinDeriver -->|"Deterministic Left/Right Headers"| API
+    API -->|"JSON Response with Nodes & Edges"| Canvas
 ```
 
 ---
@@ -229,7 +229,7 @@ All backend REST endpoints are prefixed with `/api`:
 ## 📖 Additional Documentation
 
 For an exhaustive, deep-dive technical manual covering code-level implementations, data schemas, and detailed sequence diagrams, see:
-👉 **[INFO.md](file:///e:/Projects/Complete/Hangover/INFO.md)**
+👉 **[INFO.md](file:///e:/Projects/Complete/Hangover/server/INFO.md)**
 
 ---
 
